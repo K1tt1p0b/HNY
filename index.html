@@ -9,56 +9,120 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    :root{ --primary:#d4af37; --bg:#1a1a2e; --card:rgba(255,255,255,.95); }
+    :root{
+      --primary:#d4af37;
+      --card:rgba(255,255,255,.95);
+      --ink:#222;
+      --muted:#666;
+      --shadow:0 14px 40px rgba(0,0,0,.55);
+    }
     *{ margin:0; padding:0; box-sizing:border-box; }
-
     body{
       font-family:'Prompt',sans-serif;
       background:#111;
       background-image:url('https://img.freepik.com/free-vector/flat-design-baby-shower-zoom-background_23-2149242839.jpg?t=st=1767064528~exp=1767068128~hmac=ecc91aa8eb9bbbdc70da9072ead28fcacaddcf707eac84e612baa75d03627469&w=1480');
       background-size:cover;
       background-position:center;
-
-      /* ✅ มือถือหลายเครื่อง fixed แล้วเพี้ยน/ทัชเพี้ยน → ใช้ scroll */
       background-attachment:scroll;
-
-      /* ✅ ดีกว่า 100vh บนมือถือ (กัน address bar) */
       min-height:100svh;
-
       display:flex;
       align-items:center;
       justify-content:center;
       padding:18px;
-      color:#333;
-
-      /* ✅ กัน iOS ปรับขนาดฟอนต์เอง */
-      -webkit-text-size-adjust: 100%;
+      color:var(--ink);
+      -webkit-text-size-adjust:100%;
+    }
+    @media (min-width:768px){
+      body{ background-attachment:fixed; }
     }
 
-    /* ✅ กันเลเยอร์ทับคลิก */
-    .wrap{ width:100%; max-width:900px; position:relative; z-index:2; }
-    .card{
-      position:relative;
-      z-index:2;
-      background:var(--card);
-      border-radius:22px;
-      padding:34px 22px;
-      box-shadow:0 14px 40px rgba(0,0,0,.55);
-      text-align:center;
+    /* ===== Overlay (Lock / Pass / Countdown) ===== */
+    #overlay{
+      position:fixed; inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:rgba(0,0,0,.75);
       backdrop-filter: blur(6px);
+      z-index:9999;
     }
-
-    .title{
+    .gate{
+      width:min(720px, 96vw);
+      background:rgba(255,255,255,.96);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:28px 18px;
+      text-align:center;
+    }
+    .gate .eyebrow{
+      font-size:.95rem;
+      color:#777;
+      margin-bottom:6px;
+    }
+    .gate .gtitle{
       font-family:'Dancing Script',cursive;
       color:var(--primary);
-      font-size:3.3rem;
-      margin-bottom:.4rem;
+      font-size:3rem;
+      margin-bottom:8px;
       text-shadow:0 8px 20px rgba(0,0,0,.12);
     }
-    .sub{ color:#666; font-size:1.15rem; margin-bottom:18px; }
+    .gate .desc{
+      color:#666;
+      font-size:1.05rem;
+      line-height:1.7;
+      margin:0 auto 18px;
+      max-width:560px;
+    }
+
+    .countdown{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0, 1fr));
+      gap:10px;
+      margin:16px auto 10px;
+      max-width:520px;
+    }
+    .cd-box{
+      background:#fff;
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:16px;
+      padding:12px 8px;
+      box-shadow:0 10px 22px rgba(0,0,0,.08);
+    }
+    .cd-num{
+      font-size:1.7rem;
+      font-weight:600;
+      color:#222;
+      line-height:1.1;
+    }
+    .cd-lab{
+      margin-top:4px;
+      font-size:.9rem;
+      color:#777;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .input{
+      width:min(260px, 88vw);
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.15);
+      outline:none;
+      font-size:1.05rem;
+      text-align:center;
+      letter-spacing:.15em;
+    }
 
     .btn{
-      display:inline-flex; gap:10px; align-items:center; justify-content:center;
+      display:inline-flex; gap:10px;
+      align-items:center; justify-content:center;
       padding:12px 18px;
       border:none;
       border-radius:999px;
@@ -67,18 +131,47 @@
       font-family:'Prompt',sans-serif;
       cursor:pointer;
       box-shadow:0 10px 24px rgba(212,175,55,.35);
-      transition: transform .15s ease;
-      margin-bottom:18px;
-
-      /* ✅ ช่วยเรื่อง tap บนมือถือ */
+      transition: transform .15s ease, opacity .15s ease;
       touch-action: manipulation;
-
-      /* ✅ กันโดนทับ */
+      user-select:none;
       position:relative;
       z-index:3;
     }
     .btn:hover{ transform: translateY(-1px); }
-    .btn:active{ transform: translateY(0px) scale(0.99); }
+    .btn:active{ transform: translateY(0) scale(.99); }
+    .btn:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+      transform:none;
+    }
+    .error{
+      margin-top:10px;
+      color:#b00020;
+      font-size:.95rem;
+      min-height:1.2em;
+    }
+
+    /* ===== Main Card ===== */
+    .wrap{ width:100%; max-width:900px; position:relative; z-index:2; }
+    .card{
+      background:var(--card);
+      border-radius:22px;
+      padding:34px 22px;
+      box-shadow:var(--shadow);
+      text-align:center;
+      backdrop-filter: blur(6px);
+      overflow:hidden;
+      position:relative;
+      z-index:2;
+    }
+    .title{
+      font-family:'Dancing Script',cursive;
+      color:var(--primary);
+      font-size:3.3rem;
+      margin-bottom:.4rem;
+      text-shadow:0 8px 20px rgba(0,0,0,.12);
+    }
+    .sub{ color:var(--muted); font-size:1.15rem; margin-bottom:18px; }
 
     .gallery{
       display:grid;
@@ -94,16 +187,11 @@
       background:#fff;
       box-shadow:0 10px 22px rgba(0,0,0,.12);
       cursor:pointer;
+      touch-action: manipulation;
       position:relative;
       z-index:2;
-      touch-action: manipulation;
     }
-    .photo img{
-      width:100%;
-      height:240px;
-      object-fit:cover;
-      display:block;
-    }
+    .photo img{ width:100%; height:240px; object-fit:cover; display:block; }
 
     .message{
       background:#f9f4e8;
@@ -118,7 +206,7 @@
       position:relative;
       z-index:2;
     }
-    .footer{ margin-top:18px; color:#888; font-size:.95rem; }
+    .footer{ margin-top:18px; color:#888; font-size:.95rem; position:relative; z-index:2; }
 
     /* Lightbox */
     #lightbox{
@@ -129,14 +217,9 @@
       justify-content:center;
       padding:18px;
       z-index:999;
-
-      /* ✅ ปิดการรับคลิกตอนยังไม่เปิด (กันทับปุ่มแบบไม่ตั้งใจ) */
       pointer-events:none;
     }
-    #lightbox.open{
-      display:flex;
-      pointer-events:auto;
-    }
+    #lightbox.open{ display:flex; pointer-events:auto; }
     #lightbox img{
       max-width:min(980px, 94vw);
       max-height:86vh;
@@ -144,7 +227,7 @@
       box-shadow:0 18px 60px rgba(0,0,0,.6);
       background:#111;
     }
-    #lightbox .hint{
+    #lightbox .lb-hint{
       position:absolute;
       bottom:14px;
       width:100%;
@@ -155,14 +238,19 @@
       padding:0 12px;
     }
 
-    /* ✅ คง fixed เฉพาะบนจอใหญ่ (ถ้าต้องการ) */
-    @media (min-width: 768px){
-      body{ background-attachment: fixed; }
+    /* ===== Step animations ===== */
+    .reveal .step{
+      opacity:0;
+      transform:translateY(14px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .reveal .step.show{
+      opacity:1;
+      transform:translateY(0);
     }
 
-    /* ✅ ปรับให้มือถือดูดีขึ้น */
+    /* ===== Mobile ===== */
     @media (max-width:600px){
-      .wrap{ max-width:100%; }
       .card{ padding:22px 14px; border-radius:18px; }
       .title{ font-size:2.4rem; }
       .sub{ font-size:1.05rem; }
@@ -179,46 +267,61 @@
         font-size:1.02rem;
         line-height:1.75;
       }
+
+      .gate .gtitle{ font-size:2.4rem; }
+      .countdown{ grid-template-columns:repeat(2, minmax(0,1fr)); }
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div class="title">Happy New Year ❤️</div>
-      <div class="sub">ความทรงจำของเรา... และก้าวสู่ปีใหม่ไปด้วยกัน</div>
+  <!-- ===== LOCK/PASS OVERLAY ===== -->
+  <div id="overlay">
+    <div class="gate">
+      <div class="eyebrow">🎁 เซอร์ไพรส์สำหรับคนพิเศษ</div>
+      <div class="gtitle">For You My Love…</div>
 
-      <button class="btn" id="confettiBtn" type="button">🎊 ยิงพลุ</button>
-
-      <div class="gallery" id="gallery">
-        <div class="photo">
-          <img src="https://scontent.fbkk12-6.fna.fbcdn.net/v/t1.15752-9/605193658_1441673800632792_7816480993276965679_n.png?stp=dst-png_s640x640&_nc_cat=106&ccb=1-7&_nc_sid=0024fc&_nc_ohc=c2FzdXrW48oQ7kNvwGdNHyk&_nc_oc=AdkfJrR1j_LgbZuyoa8jwFfBWbUA6fKs5SCAZSNjU9XrWT5t5mKFz2UOoCva8W6R1W8EGKFPziTdYK-2GxJMgYaq&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk12-6.fna&oh=03_Q7cD4AGJSJyanHSbcuN3X9w9gpMQohA0gfNkk29R1ssKYEbRRA&oe=697ABB87" alt="photo1" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk12-5.fna.fbcdn.net/v/t1.15752-9/604388725_1395793552224780_7812027985209720517_n.png?stp=dst-png_p480x480&_nc_cat=107&ccb=1-7&_nc_sid=0024fc&_nc_ohc=XB8VnNxZdn0Q7kNvwFYAUT6&_nc_oc=Adn29Gc8pX0rWE6ttX-dM6pvzDv8U5iyoLpvPD3OpuxK8LtuX9Z17b1vzH8R5QxaBqzUqo9BxeRpJlCKuIMVRtrH&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk12-5.fna&oh=03_Q7cD4AGZ0Vg5_KVTMvkZaQ3JTbm-VvaGRh2cjzx0qm-vGPizAg&oe=697AD016" alt="photo2" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk13-3.fna.fbcdn.net/v/t1.15752-9/599948603_2222585538152457_836236715168207361_n.png?stp=dst-png_s480x480&_nc_cat=108&ccb=1-7&_nc_sid=0024fc&_nc_ohc=4UiIis-3FAkQ7kNvwHiNk3_&_nc_oc=AdlAGURsUK156gvUlZkBOVUP_RqbPXxKdzwQAguPg6cblUu0iW5USNkb_Pgq6b57S7tcPdE9sbXNSMC3Xp0etDBe&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk13-3.fna&oh=03_Q7cD4AF3eKcSzVAvigQgj5vtpcjRexj_jBDrkiW8bG1UnwzvWA&oe=697AD059" alt="photo3" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk9-2.fna.fbcdn.net/v/t1.15752-9/607270970_1877580556297689_2530367823956952377_n.png?stp=dst-png_p480x480&_nc_cat=109&ccb=1-7&_nc_sid=0024fc&_nc_ohc=pI-Q3t_kv4AQ7kNvwEzin_d&_nc_oc=AdnjDvr8Asv3lV2ulzgZO_98XO7yB37xJwGIZLxzRKoks0jpdqDuCY8Ts7IHolhn6jf7W6oveb9koeYQgPqP_A6B&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk9-2.fna&oh=03_Q7cD4AHhPDF-fHjh-7yGPHFHvn0KIwRLsmL0JbBZq0JAGOQ2fw&oe=697AD0F0" alt="photo4" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/606755237_912117987908743_1585109868171335558_n.png?stp=dst-png_s480x480&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=gy4AgMJL4_UQ7kNvwE3I7pw&_nc_oc=Adl5rV0LDC7mxTcvEyAWZTfOLFkVlQw8D73RS471mdVhNf3QkaIlhJPs7crkdF8Y9F1DpS4evKRbM97d8-akT98A&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AEUD-G8TL6PYwFzBSHxTmGMPTpDjpTFNNdWgFlykG0MdQ&oe=697AB4C7" alt="photo5" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/605720046_1512102989856961_2555723052746324829_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=r3YMAscT4c0Q7kNvwEhk0y5&_nc_oc=AdlYDPRcdTL89GQ7c99lwhfzDmMy7nrk5VQSoR7Qu3B7yodvEuZ4Ejz5ucSOXGDUB3eTR6U44VlYlEZCRmoJKOTv&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AGW3KxbnicSIrpI5438qF5G6QaQnz4TOgF8hIiTKRFeBQ&oe=697ABF9D" alt="photo6" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk8-4.fna.fbcdn.net/v/t1.15752-9/604747421_883211950867918_4327092077245887492_n.jpg?stp=dst-jpg_s640x640_tt6&_nc_cat=100&ccb=1-7&_nc_sid=0024fc&_nc_ohc=a1icSzyHtxMQ7kNvwHDZk6q&_nc_oc=AdlXdJp69_NgC0QGOolGqjgm9ts7V0BEAr8ZHqNTzcjOYZmE2REpw72PS62Rv-ViCYCNJImRa-d9-YM2-Mp9eGmp&_nc_zt=23&_nc_ht=scontent.fbkk8-4.fna&oh=03_Q7cD4AG-qt8c-xf2VxfmPdkC14zfy7zVvgkM7XlBQvpUN7Iu_g&oe=697AB194" alt="photo7" />
-        </div>
-        <div class="photo">
-          <img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/607058595_2290867601402415_4141367400677345804_n.jpg?stp=dst-jpg_s640x640_tt6&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=CP_vSkstP_4Q7kNvwGdlnNX&_nc_oc=AdlwywkHACIKiw40_oVAi3NVtjjM0octkIqC0rKssb443p-A7pYxxJogivJLKb-Bfe-rb4V5tAGKlgWXFsq9hBEl&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AGnNE3IILst2wpSmB6oOBDQvCqqQmnTNzqHjFsH4GK8Ew&oe=697ACCB9" alt="photo8" />
-        </div>
+      <div class="desc" id="gateDesc">
+        รอก่อนน้า... ของขวัญปีใหม่นี้ไม่มีของให้แต่อันนี้ตั้งใจทำมากๆนะ
       </div>
 
-      <div class="message">
+      <div class="countdown" id="countdown">
+        <div class="cd-box"><div class="cd-num" id="d">--</div><div class="cd-lab">วัน</div></div>
+        <div class="cd-box"><div class="cd-num" id="h">--</div><div class="cd-lab">ชั่วโมง</div></div>
+        <div class="cd-box"><div class="cd-num" id="m">--</div><div class="cd-lab">นาที</div></div>
+        <div class="cd-box"><div class="cd-num" id="s">--</div><div class="cd-lab">วินาที</div></div>
+      </div>
+
+      <div class="row">
+        <input id="pass" class="input" type="password" inputmode="numeric" placeholder="ใส่รหัสผ่าน" maxlength="6" />
+        <button id="openBtn" class="btn" type="button">🔓 เปิดของขวัญ</button>
+      </div>
+
+      <div class="error" id="err"></div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN CARD ===== -->
+  <div class="wrap">
+    <div class="card reveal" id="mainCard" aria-hidden="true">
+      <div class="step" id="st1">
+        <div class="title">Happy New Year ❤️</div>
+        <div class="sub">สวัสดีจ้าที่รัก อย่าขำนะอันนี้เค้าตั้งใจเลือกรูปเลย</div>
+        <button class="btn" id="confettiBtn" type="button">🎊 ยิงพลุ</button>
+      </div>
+
+      <div class="gallery step" id="gallery">
+        <div class="photo"><img src="https://scontent.fbkk12-6.fna.fbcdn.net/v/t1.15752-9/605193658_1441673800632792_7816480993276965679_n.png?stp=dst-png_s640x640&_nc_cat=106&ccb=1-7&_nc_sid=0024fc&_nc_ohc=c2FzdXrW48oQ7kNvwGdNHyk&_nc_oc=AdkfJrR1j_LgbZuyoa8jwFfBWbUA6fKs5SCAZSNjU9XrWT5t5mKFz2UOoCva8W6R1W8EGKFPziTdYK-2GxJMgYaq&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk12-6.fna&oh=03_Q7cD4AGJSJyanHSbcuN3X9w9gpMQohA0gfNkk29R1ssKYEbRRA&oe=697ABB87" alt="photo1" /></div>
+        <div class="photo"><img src="https://scontent.fbkk12-5.fna.fbcdn.net/v/t1.15752-9/604388725_1395793552224780_7812027985209720517_n.png?stp=dst-png_p480x480&_nc_cat=107&ccb=1-7&_nc_sid=0024fc&_nc_ohc=XB8VnNxZdn0Q7kNvwFYAUT6&_nc_oc=Adn29Gc8pX0rWE6ttX-dM6pvzDv8U5iyoLpvPD3OpuxK8LtuX9Z17b1vzH8R5QxaBqzUqo9BxeRpJlCKuIMVRtrH&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk12-5.fna&oh=03_Q7cD4AGZ0Vg5_KVTMvkZaQ3JTbm-VvaGRh2cjzx0qm-vGPizAg&oe=697AD016" alt="photo2" /></div>
+        <div class="photo"><img src="https://scontent.fbkk13-3.fna.fbcdn.net/v/t1.15752-9/599948603_2222585538152457_836236715168207361_n.png?stp=dst-png_s480x480&_nc_cat=108&ccb=1-7&_nc_sid=0024fc&_nc_ohc=4UiIis-3FAkQ7kNvwHiNk3_&_nc_oc=AdlAGURsUK156gvUlZkBOVUP_RqbPXxKdzwQAguPg6cblUu0iW5USNkb_Pgq6b57S7tcPdE9sbXNSMC3Xp0etDBe&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk13-3.fna&oh=03_Q7cD4AF3eKcSzVAvigQgj5vtpcjRexj_jBDrkiW8bG1UnwzvWA&oe=697AD059" alt="photo3" /></div>
+        <div class="photo"><img src="https://scontent.fbkk9-2.fna.fbcdn.net/v/t1.15752-9/607270970_1877580556297689_2530367823956952377_n.png?stp=dst-png_p480x480&_nc_cat=109&ccb=1-7&_nc_sid=0024fc&_nc_ohc=pI-Q3t_kv4AQ7kNvwEzin_d&_nc_oc=AdnjDvr8Asv3lV2ulzgZO_98XO7yB37xJwGIZLxzRKoks0jpdqDuCY8Ts7IHolhn6jf7W6oveb9koeYQgPqP_A6B&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk9-2.fna&oh=03_Q7cD4AHhPDF-fHjh-7yGPHFHvn0KIwRLsmL0JbBZq0JAGOQ2fw&oe=697AD0F0" alt="photo4" /></div>
+        <div class="photo"><img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/606755237_912117987908743_1585109868171335558_n.png?stp=dst-png_s480x480&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=gy4AgMJL4_UQ7kNvwE3I7pw&_nc_oc=Adl5rV0LDC7mxTcvEyAWZTfOLFkVlQw8D73RS471mdVhNf3QkaIlhJPs7crkdF8Y9F1DpS4evKRbM97d8-akT98A&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AEUD-G8TL6PYwFzBSHxTmGMPTpDjpTFNNdWgFlykG0MdQ&oe=697AB4C7" alt="photo5" /></div>
+        <div class="photo"><img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/605720046_1512102989856961_2555723052746324829_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=r3YMAscT4c0Q7kNvwEhk0y5&_nc_oc=AdlYDPRcdTL89GQ7c99lwhfzDmMy7nrk5VQSoR7Qu3B7yodvEuZ4Ejz5ucSOXGDUB3eTR6U44VlYlEZCRmoJKOTv&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AGW3KxbnicSIrpI5438qF5G6QaQnz4TOgF8hIiTKRFeBQ&oe=697ABF9D" alt="photo6" /></div>
+        <div class="photo"><img src="https://scontent.fbkk8-4.fna.fbcdn.net/v/t1.15752-9/604747421_883211950867918_4327092077245887492_n.jpg?stp=dst-jpg_s640x640_tt6&_nc_cat=100&ccb=1-7&_nc_sid=0024fc&_nc_ohc=a1icSzyHtxMQ7kNvwHDZk6q&_nc_oc=AdlXdJp69_NgC0QGOolGqjgm9ts7V0BEAr8ZHqNTzcjOYZmE2REpw72PS62Rv-ViCYCNJImRa-d9-YM2-Mp9eGmp&_nc_zt=23&_nc_ht=scontent.fbkk8-4.fna&oh=03_Q7cD4AG-qt8c-xf2VxfmPdkC14zfy7zVvgkM7XlBQvpUN7Iu_g&oe=697AB194" alt="photo7" /></div>
+        <div class="photo"><img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/607058595_2290867601402415_4141367400677345804_n.jpg?stp=dst-jpg_s640x640_tt6&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=CP_vSkstP_4Q7kNvwGdlnNX&_nc_oc=AdlwywkHACIKiw40_oVAi3NVtjjM0octkIqC0rKssb443p-A7pYxxJogivJLKb-Bfe-rb4V5tAGKlgWXFsq9hBEl&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AGnNE3IILst2wpSmB6oOBDQvCqqQmnTNzqHjFsH4GK8Ew&oe=697ACCB9" alt="photo8" /></div>
+      </div>
+
+      <div class="message step" id="st3">
 สุขสันต์วันปีใหม่นะครับที่รัก! 🎉
 
 เค้าขอบคุณเธอมากๆนะครับ ที่อยู่กับเค้ามาตลอดเลยในทุกๆปี เรายังมีอะไรที่อยากทำด้วยกันอีกเยอะเลยนะครับ  
@@ -233,50 +336,275 @@
 *ไม่เครียดนะอ้วนตั้งใจสัมภาษณ์นะอ้วนเค้าเก่งอยู่แล้ว เค้าอยู่ข้างๆเธอเสมอนะครับ*
       </div>
 
-      <div class="footer">Forever ❤️</div>
+      <div class="footer step" id="st4">Forever ❤️</div>
     </div>
   </div>
 
+  <!-- Lightbox -->
   <div id="lightbox" onclick="closeLightbox()">
     <img id="lightboxImg" src="" alt="preview"/>
-    <div class="hint">แตะที่พื้นหลังเพื่อปิด • กด ESC เพื่อปิด</div>
+    <div class="lb-hint">แตะพื้นหลังเพื่อปิด • กด ESC เพื่อปิด</div>
   </div>
 
   <script>
-    // ✅ กัน error ถ้า confetti โดนบล็อก/โหลดไม่ทัน
-    function partyPop(){
-      if (typeof confetti !== "function") {
-        alert("เอฟเฟกต์พลุถูกบล็อก/โหลดไม่สำเร็จ\nแนะนำเปิดไฟล์ด้วย Safari/Chrome โดยตรงครับ");
-        return;
-      }
-      confetti({ particleCount: 160, spread: 70, origin: { y: 0.6 }, colors: ['#d4af37', '#ff0000', '#ffffff'] });
-      setTimeout(() => {
-        confetti({ particleCount: 110, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#d4af37', '#ffffff'] });
-        confetti({ particleCount: 110, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#d4af37', '#ffffff'] });
-      }, 450);
-    }
+    const PASSCODE = "050366";
+    const ENABLE_TIMER = true;
+    const UNLOCK_AT = "2026-01-01T00:00:00+07:00";
 
-    // ✅ ผูก event แบบ addEventListener (เสถียรกว่า onclick ในบางพรีวิว)
-    document.getElementById("confettiBtn").addEventListener("click", partyPop);
+    function getBangkokNow() {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Bangkok",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(new Date());
+
+      const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+      return new Date(`${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}+07:00`);
+    }
+    const pad2 = (n)=> String(n).padStart(2,"0");
+
+    const overlay = document.getElementById("overlay");
+    const passEl = document.getElementById("pass");
+    const openBtn = document.getElementById("openBtn");
+    const errEl = document.getElementById("err");
+
+    const dEl = document.getElementById("d");
+    const hEl = document.getElementById("h");
+    const mEl = document.getElementById("m");
+    const sEl = document.getElementById("s");
+
+    const mainCard = document.getElementById("mainCard");
+    const steps = ["st1","gallery","st3","st4"].map(id => document.getElementById(id));
+
+    const unlockAt = new Date(UNLOCK_AT);
+
+    function updateGate() {
+      if (!ENABLE_TIMER) {
+        dEl.textContent = "00";
+        hEl.textContent = "00";
+        mEl.textContent = "00";
+        sEl.textContent = "00";
+        passEl.disabled = false;
+        openBtn.disabled = false;
+        return true;
+      }
+
+      const nowBkk = getBangkokNow();
+      const diff = unlockAt.getTime() - nowBkk.getTime();
+
+      if (diff <= 0) {
+        dEl.textContent = "00"; hEl.textContent = "00"; mEl.textContent = "00"; sEl.textContent = "00";
+        passEl.disabled = false;
+        openBtn.disabled = false;
+        return true;
+      }
+
+      const total = Math.max(0, Math.floor(diff / 1000));
+      const days = Math.floor(total / 86400);
+      const hrs  = Math.floor((total % 86400) / 3600);
+      const mins = Math.floor((total % 3600) / 60);
+      const secs = total % 60;
+
+      dEl.textContent = pad2(days);
+      hEl.textContent = pad2(hrs);
+      mEl.textContent = pad2(mins);
+      sEl.textContent = pad2(secs);
+
+      passEl.disabled = true;
+      openBtn.disabled = true;
+      return false;
+    }
 
     const lb = document.getElementById('lightbox');
     const lbImg = document.getElementById('lightboxImg');
-
     function openLightbox(src){ lbImg.src = src; lb.classList.add('open'); }
     function closeLightbox(){ lb.classList.remove('open'); lbImg.src = ""; }
-
     document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeLightbox(); });
-
     document.getElementById('gallery').addEventListener('click', (e)=>{
       const img = e.target.closest('img');
       if(!img) return;
       openLightbox(img.src);
     });
 
-    // ยิงพลุอัตโนมัติครั้งแรก (ถ้าโดนบล็อกก็จะไม่พัง)
-    setTimeout(() => {
-      try { partyPop(); } catch(e) {}
-    }, 350);
+    // ✅ เพิ่มเสียง: เพลงเบาๆ + เสียงตอนพลุ
+    let audioCtx = null;
+    let master = null;
+    let musicStarted = false;
+
+    function ensureAudio(){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return false;
+      if (!audioCtx) {
+        audioCtx = new Ctx();
+        master = audioCtx.createGain();
+        master.gain.value = 0.12;
+        master.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return true;
+    }
+
+    function startSoftMusic(){
+      if (musicStarted) return;
+      if (!ensureAudio()) return;
+
+      const g = audioCtx.createGain();
+      g.gain.value = 0.0;
+      g.connect(master);
+
+      function makeOsc(freq, gain){
+        const osc = audioCtx.createOscillator();
+        const og = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        og.gain.value = gain;
+        osc.connect(og).connect(g);
+        osc.start();
+      }
+
+      makeOsc(220.0, 0.06);
+      makeOsc(329.63, 0.045);
+      makeOsc(277.18, 0.035);
+
+      const osc2 = audioCtx.createOscillator();
+      const g2 = audioCtx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.value = 880.0;
+      g2.gain.value = 0.008;
+      osc2.connect(g2).connect(g);
+      osc2.start();
+
+      const lfo = audioCtx.createOscillator();
+      const lfoGain = audioCtx.createGain();
+      lfo.type = "sine";
+      lfo.frequency.value = 0.22;
+      lfoGain.gain.value = 0.18;
+      lfo.connect(lfoGain);
+      lfoGain.connect(g.gain);
+      lfo.start();
+
+      const now = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0, now);
+      g.gain.linearRampToValueAtTime(0.12, now + 2.5);
+
+      musicStarted = true;
+    }
+
+    function playConfettiSfx(){
+      if (!ensureAudio()) return;
+      const now = audioCtx.currentTime;
+
+      const bufferSize = Math.floor(audioCtx.sampleRate * 0.08);
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.0001, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.22, now + 0.01);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
+
+      noise.connect(noiseGain).connect(master);
+      noise.start(now);
+
+      const osc = audioCtx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(720, now + 0.18);
+
+      const og = audioCtx.createGain();
+      og.gain.setValueAtTime(0.0001, now);
+      og.gain.exponentialRampToValueAtTime(0.12, now + 0.03);
+      og.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+
+      osc.connect(og).connect(master);
+      osc.start(now);
+      osc.stop(now + 0.26);
+
+      for (let k = 0; k < 3; k++){
+        const t = now + 0.06 + k * 0.04;
+        const b = audioCtx.createOscillator();
+        const bg = audioCtx.createGain();
+        b.type = "triangle";
+        b.frequency.setValueAtTime(1200 + Math.random()*700, t);
+        bg.gain.setValueAtTime(0.0001, t);
+        bg.gain.exponentialRampToValueAtTime(0.06, t + 0.01);
+        bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+        b.connect(bg).connect(master);
+        b.start(t);
+        b.stop(t + 0.06);
+      }
+    }
+
+    // ✅ partyPop() มีเสียงตอนพลุ + ตอนกด
+    function partyPop(){
+      playConfettiSfx();
+
+      if (typeof confetti !== "function") return;
+      confetti({ particleCount: 160, spread: 70, origin: { y: 0.6 }, colors: ['#d4af37', '#ff0000', '#ffffff'] });
+      setTimeout(() => {
+        playConfettiSfx();
+        confetti({ particleCount: 110, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#d4af37', '#ffffff'] });
+        confetti({ particleCount: 110, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#d4af37', '#ffffff'] });
+      }, 450);
+    }
+
+    function revealSteps(){
+      mainCard.setAttribute("aria-hidden","false");
+      steps.forEach((el, i) => {
+        setTimeout(() => el.classList.add("show"), 220 + i * 260);
+      });
+    }
+
+    function unlockNow(){
+      overlay.style.display = "none";
+      ensureAudio();
+      startSoftMusic();
+
+      revealSteps();
+      setTimeout(() => { try { partyPop(); } catch(e){} }, 250);
+      localStorage.setItem("hny_unlocked", "1");
+    }
+
+    function tryOpen(){
+      errEl.textContent = "";
+      const timeOk = updateGate();
+
+      if (!timeOk) {
+        errEl.textContent = "ยังไม่ถึงเวลาเปิดนะครับ รออีกนิดน้า 💛";
+        return;
+      }
+
+      const v = (passEl.value || "").trim();
+      if (v !== PASSCODE) {
+        errEl.textContent = "รหัสไม่ถูกต้องน้า ลองใหม่อีกครั้ง 💭";
+        return;
+      }
+
+      unlockNow();
+    }
+
+    openBtn.addEventListener("click", tryOpen);
+    passEl.addEventListener("keydown", (e)=>{ if(e.key === "Enter") tryOpen(); });
+
+    document.getElementById("confettiBtn").addEventListener("click", ()=>{
+      ensureAudio();
+      partyPop();
+    });
+
+    function tick(){
+      const timeOk = updateGate();
+      if (ENABLE_TIMER && timeOk && localStorage.getItem("hny_unlocked") === "1") {
+        unlockNow();
+        return;
+      }
+    }
+    tick();
+    setInterval(tick, 250);
   </script>
 </body>
 </html>
