@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy New Year My Love!</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root{ --primary:#d4af37; --bg:#1a1a2e; --card:rgba(255,255,255,.95); }
+    *{ margin:0; padding:0; box-sizing:border-box; }
+
+    body{
+      font-family:'Prompt',sans-serif;
+      background:#111;
+      background-image:url('https://img.freepik.com/free-vector/flat-design-baby-shower-zoom-background_23-2149242839.jpg?t=st=1767064528~exp=1767068128~hmac=ecc91aa8eb9bbbdc70da9072ead28fcacaddcf707eac84e612baa75d03627469&w=1480');
+      background-size:cover;
+      background-position:center;
+
+      /* ✅ มือถือหลายเครื่อง fixed แล้วเพี้ยน/ทัชเพี้ยน → ใช้ scroll */
+      background-attachment:scroll;
+
+      /* ✅ ดีกว่า 100vh บนมือถือ (กัน address bar) */
+      min-height:100svh;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      color:#333;
+
+      /* ✅ กัน iOS ปรับขนาดฟอนต์เอง */
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* ✅ กันเลเยอร์ทับคลิก */
+    .wrap{ width:100%; max-width:900px; position:relative; z-index:2; }
+    .card{
+      position:relative;
+      z-index:2;
+      background:var(--card);
+      border-radius:22px;
+      padding:34px 22px;
+      box-shadow:0 14px 40px rgba(0,0,0,.55);
+      text-align:center;
+      backdrop-filter: blur(6px);
+    }
+
+    .title{
+      font-family:'Dancing Script',cursive;
+      color:var(--primary);
+      font-size:3.3rem;
+      margin-bottom:.4rem;
+      text-shadow:0 8px 20px rgba(0,0,0,.12);
+    }
+    .sub{ color:#666; font-size:1.15rem; margin-bottom:18px; }
+
+    .btn{
+      display:inline-flex; gap:10px; align-items:center; justify-content:center;
+      padding:12px 18px;
+      border:none;
+      border-radius:999px;
+      background:var(--primary);
+      color:#fff;
+      font-family:'Prompt',sans-serif;
+      cursor:pointer;
+      box-shadow:0 10px 24px rgba(212,175,55,.35);
+      transition: transform .15s ease;
+      margin-bottom:18px;
+
+      /* ✅ ช่วยเรื่อง tap บนมือถือ */
+      touch-action: manipulation;
+
+      /* ✅ กันโดนทับ */
+      position:relative;
+      z-index:3;
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0px) scale(0.99); }
+
+    .gallery{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:14px;
+      margin:10px 0 26px;
+      position:relative;
+      z-index:2;
+    }
+    .photo{
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+      position:relative;
+      z-index:2;
+      touch-action: manipulation;
+    }
+    .photo img{
+      width:100%;
+      height:240px;
+      object-fit:cover;
+      display:block;
+    }
+
+    .message{
+      background:#f9f4e8;
+      border-radius:16px;
+      padding:22px;
+      border:2px dashed var(--primary);
+      text-align:left;
+      line-height:1.85;
+      color:#555;
+      font-size:1.08rem;
+      white-space:pre-wrap;
+      position:relative;
+      z-index:2;
+    }
+    .footer{ margin-top:18px; color:#888; font-size:.95rem; }
+
+    /* Lightbox */
+    #lightbox{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.82);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:999;
+
+      /* ✅ ปิดการรับคลิกตอนยังไม่เปิด (กันทับปุ่มแบบไม่ตั้งใจ) */
+      pointer-events:none;
+    }
+    #lightbox.open{
+      display:flex;
+      pointer-events:auto;
+    }
+    #lightbox img{
+      max-width:min(980px, 94vw);
+      max-height:86vh;
+      border-radius:16px;
+      box-shadow:0 18px 60px rgba(0,0,0,.6);
+      background:#111;
+    }
+    #lightbox .hint{
+      position:absolute;
+      bottom:14px;
+      width:100%;
+      text-align:center;
+      color:#eee;
+      opacity:.85;
+      font-size:.95rem;
+      padding:0 12px;
+    }
+
+    /* ✅ คง fixed เฉพาะบนจอใหญ่ (ถ้าต้องการ) */
+    @media (min-width: 768px){
+      body{ background-attachment: fixed; }
+    }
+
+    /* ✅ ปรับให้มือถือดูดีขึ้น */
+    @media (max-width:600px){
+      .wrap{ max-width:100%; }
+      .card{ padding:22px 14px; border-radius:18px; }
+      .title{ font-size:2.4rem; }
+      .sub{ font-size:1.05rem; }
+
+      .gallery{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap:10px;
+        margin:10px 0 18px;
+      }
+      .photo img{ height:160px; }
+
+      .message{
+        padding:18px;
+        font-size:1.02rem;
+        line-height:1.75;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="title">Happy New Year ❤️</div>
+      <div class="sub">ความทรงจำของเรา... และก้าวสู่ปีใหม่ไปด้วยกัน</div>
+
+      <button class="btn" id="confettiBtn" type="button">🎊 ยิงพลุ</button>
+
+      <div class="gallery" id="gallery">
+        <div class="photo">
+          <img src="https://scontent.fbkk12-6.fna.fbcdn.net/v/t1.15752-9/605193658_1441673800632792_7816480993276965679_n.png?stp=dst-png_s640x640&_nc_cat=106&ccb=1-7&_nc_sid=0024fc&_nc_ohc=c2FzdXrW48oQ7kNvwGdNHyk&_nc_oc=AdkfJrR1j_LgbZuyoa8jwFfBWbUA6fKs5SCAZSNjU9XrWT5t5mKFz2UOoCva8W6R1W8EGKFPziTdYK-2GxJMgYaq&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk12-6.fna&oh=03_Q7cD4AGJSJyanHSbcuN3X9w9gpMQohA0gfNkk29R1ssKYEbRRA&oe=697ABB87" alt="photo1" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk12-5.fna.fbcdn.net/v/t1.15752-9/604388725_1395793552224780_7812027985209720517_n.png?stp=dst-png_p480x480&_nc_cat=107&ccb=1-7&_nc_sid=0024fc&_nc_ohc=XB8VnNxZdn0Q7kNvwFYAUT6&_nc_oc=Adn29Gc8pX0rWE6ttX-dM6pvzDv8U5iyoLpvPD3OpuxK8LtuX9Z17b1vzH8R5QxaBqzUqo9BxeRpJlCKuIMVRtrH&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk12-5.fna&oh=03_Q7cD4AGZ0Vg5_KVTMvkZaQ3JTbm-VvaGRh2cjzx0qm-vGPizAg&oe=697AD016" alt="photo2" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk13-3.fna.fbcdn.net/v/t1.15752-9/599948603_2222585538152457_836236715168207361_n.png?stp=dst-png_s480x480&_nc_cat=108&ccb=1-7&_nc_sid=0024fc&_nc_ohc=4UiIis-3FAkQ7kNvwHiNk3_&_nc_oc=AdlAGURsUK156gvUlZkBOVUP_RqbPXxKdzwQAguPg6cblUu0iW5USNkb_Pgq6b57S7tcPdE9sbXNSMC3Xp0etDBe&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk13-3.fna&oh=03_Q7cD4AF3eKcSzVAvigQgj5vtpcjRexj_jBDrkiW8bG1UnwzvWA&oe=697AD059" alt="photo3" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk9-2.fna.fbcdn.net/v/t1.15752-9/607270970_1877580556297689_2530367823956952377_n.png?stp=dst-png_p480x480&_nc_cat=109&ccb=1-7&_nc_sid=0024fc&_nc_ohc=pI-Q3t_kv4AQ7kNvwEzin_d&_nc_oc=AdnjDvr8Asv3lV2ulzgZO_98XO7yB37xJwGIZLxzRKoks0jpdqDuCY8Ts7IHolhn6jf7W6oveb9koeYQgPqP_A6B&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk9-2.fna&oh=03_Q7cD4AHhPDF-fHjh-7yGPHFHvn0KIwRLsmL0JbBZq0JAGOQ2fw&oe=697AD0F0" alt="photo4" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/606755237_912117987908743_1585109868171335558_n.png?stp=dst-png_s480x480&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=gy4AgMJL4_UQ7kNvwE3I7pw&_nc_oc=Adl5rV0LDC7mxTcvEyAWZTfOLFkVlQw8D73RS471mdVhNf3QkaIlhJPs7crkdF8Y9F1DpS4evKRbM97d8-akT98A&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AEUD-G8TL6PYwFzBSHxTmGMPTpDjpTFNNdWgFlykG0MdQ&oe=697AB4C7" alt="photo5" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/605720046_1512102989856961_2555723052746324829_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=r3YMAscT4c0Q7kNvwEhk0y5&_nc_oc=AdlYDPRcdTL89GQ7c99lwhfzDmMy7nrk5VQSoR7Qu3B7yodvEuZ4Ejz5ucSOXGDUB3eTR6U44VlYlEZCRmoJKOTv&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AGW3KxbnicSIrpI5438qF5G6QaQnz4TOgF8hIiTKRFeBQ&oe=697ABF9D" alt="photo6" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk8-4.fna.fbcdn.net/v/t1.15752-9/604747421_883211950867918_4327092077245887492_n.jpg?stp=dst-jpg_s640x640_tt6&_nc_cat=100&ccb=1-7&_nc_sid=0024fc&_nc_ohc=a1icSzyHtxMQ7kNvwHDZk6q&_nc_oc=AdlXdJp69_NgC0QGOolGqjgm9ts7V0BEAr8ZHqNTzcjOYZmE2REpw72PS62Rv-ViCYCNJImRa-d9-YM2-Mp9eGmp&_nc_zt=23&_nc_ht=scontent.fbkk8-4.fna&oh=03_Q7cD4AG-qt8c-xf2VxfmPdkC14zfy7zVvgkM7XlBQvpUN7Iu_g&oe=697AB194" alt="photo7" />
+        </div>
+        <div class="photo">
+          <img src="https://scontent.fbkk13-1.fna.fbcdn.net/v/t1.15752-9/607058595_2290867601402415_4141367400677345804_n.jpg?stp=dst-jpg_s640x640_tt6&_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_ohc=CP_vSkstP_4Q7kNvwGdlnNX&_nc_oc=AdlwywkHACIKiw40_oVAi3NVtjjM0octkIqC0rKssb443p-A7pYxxJogivJLKb-Bfe-rb4V5tAGKlgWXFsq9hBEl&_nc_zt=23&_nc_ht=scontent.fbkk13-1.fna&oh=03_Q7cD4AGnNE3IILst2wpSmB6oOBDQvCqqQmnTNzqHjFsH4GK8Ew&oe=697ACCB9" alt="photo8" />
+        </div>
+      </div>
+
+      <div class="message">
+สุขสันต์วันปีใหม่นะครับที่รัก! 🎉
+
+เค้าขอบคุณเธอมากๆนะครับ ที่อยู่กับเค้ามาตลอดเลยในทุกๆปี เรายังมีอะไรที่อยากทำด้วยกันอีกเยอะเลยนะครับ  
+
+เค้าอาจจะมีทำตัวไม่ดีบ้างในบางครั้งและมีมึนๆบ้าง แต่เค้าก็รักเธอมากๆนะครับ  
+เค้าขอให้เธออะยู่กับเค้าแบบนี้ไปทุกๆปีเลยนะครับแล้วก็นานๆด้วยเลย
+
+ก็ขอให้ปี 2026 นี้ เป็นปีที่ดีของเราทั้งคู่มีความสุขมากๆสุขภาพแข็งแรงและให้อ้วนสมหวังในทุกๆเรื่องเลยนะครับ
+
+รักเธอที่สุดเลย ❤️❤️❤️  
+
+*ไม่เครียดนะอ้วนตั้งใจสัมภาษณ์นะอ้วนเค้าเก่งอยู่แล้ว เค้าอยู่ข้างๆเธอเสมอนะครับ*
+      </div>
+
+      <div class="footer">Forever ❤️</div>
+    </div>
+  </div>
+
+  <div id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="preview"/>
+    <div class="hint">แตะที่พื้นหลังเพื่อปิด • กด ESC เพื่อปิด</div>
+  </div>
+
+  <script>
+    // ✅ กัน error ถ้า confetti โดนบล็อก/โหลดไม่ทัน
+    function partyPop(){
+      if (typeof confetti !== "function") {
+        alert("เอฟเฟกต์พลุถูกบล็อก/โหลดไม่สำเร็จ\nแนะนำเปิดไฟล์ด้วย Safari/Chrome โดยตรงครับ");
+        return;
+      }
+      confetti({ particleCount: 160, spread: 70, origin: { y: 0.6 }, colors: ['#d4af37', '#ff0000', '#ffffff'] });
+      setTimeout(() => {
+        confetti({ particleCount: 110, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#d4af37', '#ffffff'] });
+        confetti({ particleCount: 110, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#d4af37', '#ffffff'] });
+      }, 450);
+    }
+
+    // ✅ ผูก event แบบ addEventListener (เสถียรกว่า onclick ในบางพรีวิว)
+    document.getElementById("confettiBtn").addEventListener("click", partyPop);
+
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightboxImg');
+
+    function openLightbox(src){ lbImg.src = src; lb.classList.add('open'); }
+    function closeLightbox(){ lb.classList.remove('open'); lbImg.src = ""; }
+
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeLightbox(); });
+
+    document.getElementById('gallery').addEventListener('click', (e)=>{
+      const img = e.target.closest('img');
+      if(!img) return;
+      openLightbox(img.src);
+    });
+
+    // ยิงพลุอัตโนมัติครั้งแรก (ถ้าโดนบล็อกก็จะไม่พัง)
+    setTimeout(() => {
+      try { partyPop(); } catch(e) {}
+    }, 350);
+  </script>
+</body>
+</html>
